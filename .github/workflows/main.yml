@@ -13,27 +13,26 @@ jobs:
       - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Descomprimir archivo ZIP
-        run: |
-          mkdir -p mod_src
-          unzip -q *.zip -d mod_src
-          # Si el zip tiene una subcarpeta raíz, mueve su contenido a mod_src
-          if [ $(ls -1 mod_src | wc -l) -eq 1 ] && [ -d "mod_src/$(ls -1 mod_src)" ]; then
-            SUBDIR=$(ls -1 mod_src)
-            mv mod_src/$SUBDIR/* mod_src/ 2>/dev/null || true
-            mv mod_src/$SUBDIR/.* mod_src/ 2>/dev/null || true
-            rmdir "mod_src/$SUBDIR"
-          fi
-
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Dar permisos y compilar con Gradle
-        working-directory: ./mod_src
+      - name: Buscar proyecto y compilar con Gradle
         run: |
+          # Busca automáticamente dónde quedó el archivo gradlew
+          GRADLE_PATH=$(find . -maxdepth 3 -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLE_PATH" ]; then
+            echo "Error: No se encontró el archivo gradlew en el repositorio."
+            exit 1
+          fi
+          
+          PROJECT_DIR=$(dirname "$GRADLE_PATH")
+          echo "Compilando mod en la carpeta: $PROJECT_DIR"
+          
+          cd "$PROJECT_DIR"
           chmod +x gradlew
           ./gradlew build
 
@@ -42,5 +41,5 @@ jobs:
         with:
           name: mod-fabric-1.21.11
           path: |
-            mod_src/build/libs/*.jar
-            !mod_src/build/libs/*-sources.jar
+            **/build/libs/*.jar
+            !**/build/libs/*-sources.jar
