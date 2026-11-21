@@ -19,27 +19,18 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Buscar proyecto y compilar con Gradle
-        run: |
-          # Busca automáticamente dónde quedó el archivo gradlew
-          GRADLE_PATH=$(find . -maxdepth 3 -name "gradlew" | head -n 1)
-          
-          if [ -z "$GRADLE_PATH" ]; then
-            echo "Error: No se encontró el archivo gradlew en el repositorio."
-            exit 1
-          fi
-          
-          PROJECT_DIR=$(dirname "$GRADLE_PATH")
-          echo "Compilando mod en la carpeta: $PROJECT_DIR"
-          
-          cd "$PROJECT_DIR"
-          chmod +x gradlew
-          ./gradlew build
+      - name: Configurar Gradle en la nube
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+
+      - name: Compilar mod
+        run: gradle build
 
       - name: Subir el archivo .JAR compilado
         uses: actions/upload-artifact@v4
         with:
           name: mod-fabric-1.21.11
           path: |
-            **/build/libs/*.jar
-            !**/build/libs/*-sources.jar
+            build/libs/*.jar
+            !build/libs/*-sources.jar
